@@ -1,4 +1,4 @@
-.PHONY: install run debug clean lint lint-strict test
+.PHONY: install run debug clean lint lint-strict test fclean
 
 install:
 	uv sync
@@ -12,6 +12,9 @@ debug:
 clean:
 	find . -type d \( -name __pycache__ -o -name .mypy_cache -o -name .pytest_cache \) \
 		-not -path "./.venv/*" -prune -exec rm -rf {} +
+
+fclean: clean
+	rm -rf .venv
 
 lint:
 	uv run flake8 .
