@@ -6,7 +6,7 @@ from app.core.canvas import Canvas
 from app.core.command import Command
 from app.core.scene import Scene
 from app.core.transition import Transition
-
+from app.io.config import GameConfig
 
 DIRECTIONS: dict[Command, tuple[int, int]] = {
     Command.UP: (0, -1), Command.DOWN: (0, 1),
@@ -20,7 +20,9 @@ WHITE: IntegerRGB = name_to_rgb("white")
 
 
 class FirstScene(Scene):
-    def __init__(self, width: int = 800, height: int = 600) -> None:
+    def __init__(self, config: GameConfig, width: int = 800,
+                 height: int = 600) -> None:
+        self.config = config
         self._width = width
         self._height = height
         self._x = width / 2
@@ -62,7 +64,9 @@ class FirstScene(Scene):
 
 
 class SecondScene(Scene):
-    def __init__(self, width: int = 800, height: int = 600) -> None:
+    def __init__(self, config: GameConfig, width: int = 800,
+                 height: int = 600) -> None:
+        self.config = config
         self._width = width
         self._height = height
         self._position = (width // 2, height // 2)

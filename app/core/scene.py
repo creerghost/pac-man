@@ -4,9 +4,13 @@ from typing import Any
 from .command import Command
 from .transition import Transition
 from .canvas import Canvas
+from app.io import GameConfig
 
 
 class Scene(ABC):
+    def __init__(self, config: GameConfig) -> None:
+        self.config = config
+
     @abstractmethod
     def on_enter(self, payload: Any) -> None:
         pass
