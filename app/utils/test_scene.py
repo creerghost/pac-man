@@ -31,7 +31,7 @@ class FirstScene(Scene):
         self._speed = 200.0
         self._radius = 20
         self._next = Transition.NONE
-        self._transitions = {Command.CONFIRM: Transition.START_GAME,
+        self._transitions = {Command.CONFIRM: Transition.BACK_TO_MENU,
                              Command.CANCEL: Transition.EXIT_APP}
 
     def on_enter(self, payload: Any) -> None:
@@ -57,7 +57,7 @@ class FirstScene(Scene):
     def render(self, canvas: Canvas) -> None:
         canvas.mlx_clear_window(BLACK)
         for i in range(10):
-            canvas.draw_rect(40 + i * 72, 40, 64, 32)
+            canvas.draw_rect(40 + i * 72, 40, 64, 32, WHITE)
         canvas.draw_circle(int(self._x), int(self._y), self._radius, YELLOW)
         canvas.mlx_string_put(40, self._height - 40, WHITE,
                               "Arrows: move  ENTER: next scene  ESC: quit")
@@ -71,8 +71,8 @@ class SecondScene(Scene):
         self._height = height
         self._position = (width // 2, height // 2)
         self._next = Transition.NONE
-        self._transitions = {Command.CONFIRM: Transition.BACK_TO_MENU,
-                             Command.CANCEL: Transition.BACK_TO_MENU}
+        self._transitions = {Command.CONFIRM: Transition.START_GAME,
+                             Command.CANCEL: Transition.EXIT_APP}
 
     def on_enter(self, payload: Any) -> None:
         self._position = payload

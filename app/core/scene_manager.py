@@ -13,8 +13,8 @@ class SceneManager:
     def __init__(self, start: Transition, config: GameConfig) -> None:
         self._config = config
         self._routes: dict[Transition, Callable[[GameConfig], Scene]] = {
-            Transition.BACK_TO_MENU: FirstScene,
-            Transition.START_GAME: SecondScene,
+            Transition.START_GAME: FirstScene,
+            Transition.BACK_TO_MENU: SecondScene,
         }
         self.should_quit = False
         self._current_scene: Scene = self._routes[start](self._config)
