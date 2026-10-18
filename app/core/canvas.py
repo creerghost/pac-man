@@ -21,7 +21,7 @@ class Canvas(ABC):
         pass
 
     @abstractmethod
-    def draw_line(x1: int, y1: int, x2: int, y2: int, color: IntegerRGB,
+    def draw_line(self, x1: int, y1: int, x2: int, y2: int, color: IntegerRGB,
                   thickness: int) -> None:
         pass
 
