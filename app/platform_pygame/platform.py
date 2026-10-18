@@ -36,6 +36,8 @@ class PygamePlatform(Platform):
             case pygame.K_RETURN | pygame.K_SPACE:
                 return Command.CONFIRM
             case pygame.K_ESCAPE:
+                return Command.CANCEL
+            case pygame.K_p:
                 return Command.PAUSE
             case pygame.K_BACKSPACE:
                 return Command.DELETE
