@@ -6,11 +6,13 @@ MYPY_FLAGS = --warn-return-any --warn-unused-ignores --ignore-missing-imports \
 install:
 	uv sync
 
+ARGS ?= config.json
+
 run:
-	uv run python -m src $(ARGS)
+	uv run python pac-man.py $(ARGS)
 
 debug:
-	uv run python -m pdb -m src $(ARGS)
+	uv run python -m pdb pac-man.py $(ARGS)
 
 clean:
 	find . -type d \( -name __pycache__ -o -name .mypy_cache -o -name .pytest_cache \) \
