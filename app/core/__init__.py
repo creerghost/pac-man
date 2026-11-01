@@ -4,6 +4,7 @@ from .platform import Platform
 from .scene_manager import SceneManager
 from .transition import Transition
 from .game_engine import GameEngine
+from .scene import Scene
 
 __all__ = ["Canvas", "Command", "Platform", "SceneManager", "Transition",
-           "GameEngine"]
+           "GameEngine", "Scene"]
