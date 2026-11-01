@@ -1,29 +1,38 @@
-from .movable_entity import MovableEntity
-from .direction import Direction
+"""Pac-Man player entity with buffered steering and cornering."""
+
 from typing import Tuple
+
+from .direction import Direction
 from .maze import Maze
+from .movable_entity import MovableEntity
 
 
 class Pacman(MovableEntity):
-    def __init__(self, pos: Tuple[float, float], speed: float):
+    """The player-controlled Pac-Man entity."""
+
+    def __init__(self, pos: Tuple[float, float], speed: float) -> None:
+        """Initialize Pac-Man with position, speed, and empty buffer."""
         super().__init__(pos, speed)
         self._desired_direction = Direction.NONE
 
     def reset_position(self, x: float, y: float) -> None:
+        """Reset position and clear the desired direction buffer."""
         super().reset_position(x, y)
         self._desired_direction = Direction.NONE
 
     def set_desired_direction(self, direction: Direction) -> None:
+        """Buffer player input direction for the next turn opportunity."""
         self._desired_direction = direction
 
     def _handle_direction_change(self, maze: Maze) -> None:
+        """Apply desired direction via reversal or cornering."""
         # same or nothing
         if (self._desired_direction == self._direction or
                 self._desired_direction == Direction.NONE):
             return
 
         # opposite
-        if (self._desired_direction == self._direction.opposite):
+        if self._desired_direction == self._direction.opposite:
             self._direction = self._desired_direction
             return
 
@@ -49,6 +58,7 @@ class Pacman(MovableEntity):
                 self._direction = self._desired_direction
 
     def _move(self, dt: float, maze: Maze) -> None:
+        """Advance along current direction or stop cleanly at wall."""
         if self._direction == Direction.NONE:
             return
 
@@ -73,6 +83,7 @@ class Pacman(MovableEntity):
             self._y = new_coord
 
     def update(self, dt: float, maze: Maze) -> None:
+        """Update direction change and movement for the elapsed time."""
         if dt <= 0:
             return
         self._handle_direction_change(maze)
