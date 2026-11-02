@@ -14,8 +14,8 @@ class InkyTargeting(TargetingStrategy):
         self._direction = direction
         self._blinky = blinky
 
-    def target(self, pacman: tuple[int, int],
-               ghost: tuple[int, int]) -> tuple[int, int]:
+    def target(self, pacman: tuple[float, float],
+               ghost: tuple[int, int]) -> tuple[float, float]:
         """Return Blinky's reflection across the tile ahead of pacman."""
         dx, dy = self._direction().offset
         bx, by = self._blinky()

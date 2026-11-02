@@ -1,7 +1,7 @@
 """Ghosts updated together around one shared schedule."""
 
 import random
-from typing import Callable, Optional
+from typing import Optional
 
 from app.gameplay.maze import Maze
 from .ghost import Ghost
@@ -24,7 +24,7 @@ class GhostGroup:
 
     def add(self, spawn: tuple[int, int], speed: float,
             strategy: TargetingStrategy,
-            pacman: Callable[[], tuple[int, int]]) -> Ghost:
+            pacman: tuple[float, float]) -> Ghost:
         """Create a ghost at spawn that follows the shared schedule."""
         ghost = Ghost(spawn, speed, strategy, pacman, self._schedule,
                       self._rng)
@@ -43,10 +43,12 @@ class GhostGroup:
         for ghost in self._ghosts:
             ghost.reset()
 
-    def update(self, dt: float, maze: Maze) -> None:
-        """Advance the schedule once, then move each ghost for dt seconds."""
+    def update(self, dt: float, maze: Maze,
+               pacman: tuple[float, float]) -> None:
+        """Advance the schedule and move ghosts toward Pac-Man's tile."""
         if dt <= 0:
             return
         self._schedule.update(dt)
         for ghost in self._ghosts:
+            ghost.set_pacman_position(pacman)
             ghost.update(dt, maze)

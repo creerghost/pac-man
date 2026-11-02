@@ -19,7 +19,7 @@ class Ghost(MovableEntity):
     """A ghost that moves autonomously using an injected chase strategy."""
     def __init__(self, spawn: tuple[int, int], speed: float,
                  strategy: TargetingStrategy,
-                 pacman: Callable[[], tuple[int, int]],
+                 pacman: tuple[float, float],
                  schedule: ModeSchedule,
                  rng: Optional[random.Random] = None) -> None:
         """Place a ghost at spawn that follows the shared schedule."""
@@ -37,7 +37,7 @@ class Ghost(MovableEntity):
         }
         self._choosers: dict[GhostState, Chooser] = {
             GhostState.CHASE: lambda maze, pos: self._toward(
-                maze, pos, strategy.target(self._pacman(), pos)),
+                maze, pos, strategy.target(self._pacman, pos)),
             GhostState.SCATTER: lambda maze, pos: self._toward(
                 maze, pos, self._spawn),
             GhostState.FRIGHTENED: self._flee,
@@ -55,6 +55,10 @@ class Ghost(MovableEntity):
     def speed(self) -> float:
         """Return the speed in tiles per second for the current state."""
         return self._speed * self._speed_factors.get(self.state, 1.0)
+
+    def set_pacman_position(self, pos: tuple[float, float]) -> None:
+        """Update Pac-Man's position for targeting and fleeing."""
+        self._pacman = pos
 
     def frighten(self) -> None:
         """Become frightened unless returning or respawning."""
@@ -85,13 +89,13 @@ class Ghost(MovableEntity):
 
     @staticmethod
     def _distance(pos: tuple[int, int], direction: Direction,
-                  target: tuple[int, int]) -> int:
+                  target: tuple[float, float]) -> float:
         """Return squared distance from the tile after pos to target."""
         dx, dy = direction.offset
         return (pos[0] + dx - target[0]) ** 2 + (pos[1] + dy - target[1]) ** 2
 
     def _toward(self, maze: Maze, pos: tuple[int, int],
-                target: tuple[int, int]) -> Direction:
+                target: tuple[float, float]) -> Direction:
         """Return the forward direction whose next tile is nearest target."""
         directions = self._forward(maze, pos)
         if not directions:
@@ -100,7 +104,7 @@ class Ghost(MovableEntity):
 
     def _flee(self, maze: Maze, pos: tuple[int, int]) -> Direction:
         """Pick a random direction that does not bring the ghost closer."""
-        pacman = self._pacman()
+        pacman = self._pacman
         here = self._distance(pos, Direction.NONE, pacman)
         away = [d for d in self._directions(maze, pos)
                 if self._distance(pos, d, pacman) >= here]

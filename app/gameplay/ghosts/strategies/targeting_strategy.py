@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 class TargetingStrategy(ABC):
     """Calculate a target from Pac-Man's and the ghost's tile."""
     @abstractmethod
-    def target(self, pacman: tuple[int, int],
-               ghost: tuple[int, int]) -> tuple[int, int]:
+    def target(self, pacman: tuple[float, float],
+               ghost: tuple[int, int]) -> tuple[float, float]:
         """Return the chase target tile for pacman and ghost."""
         pass

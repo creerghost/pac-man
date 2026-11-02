@@ -9,8 +9,8 @@ class ClydeTargeting(TargetingStrategy):
         """Set Clyde's retreat corner."""
         self._corner = corner
 
-    def target(self, pacman: tuple[int, int],
-               ghost: tuple[int, int]) -> tuple[int, int]:
+    def target(self, pacman: tuple[float, float],
+               ghost: tuple[int, int]) -> tuple[float, float]:
         """Return pacman when over eight tiles away, else the corner."""
         distance = (pacman[0] - ghost[0]) ** 2 + (pacman[1] - ghost[1]) ** 2
         return pacman if distance > 64 else self._corner

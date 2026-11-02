@@ -12,8 +12,8 @@ class PinkyTargeting(TargetingStrategy):
         """Read Pac-Man's current direction using direction."""
         self._direction = direction
 
-    def target(self, pacman: tuple[int, int],
-               ghost: tuple[int, int]) -> tuple[int, int]:
+    def target(self, pacman: tuple[float, float],
+               ghost: tuple[int, int]) -> tuple[float, float]:
         """Return the tile four steps ahead of pacman."""
         dx, dy = self._direction().offset
         return pacman[0] + 4 * dx, pacman[1] + 4 * dy
