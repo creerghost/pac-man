@@ -4,6 +4,7 @@ from .maze_adapter import MazeAdapter
 from .movable_entity import MovableEntity
 from .pacman import Pacman
 from .tile import Tile
+from .game_view import GameView
 
 
 __all__ = [
@@ -13,4 +14,5 @@ __all__ = [
     "MovableEntity",
     "Pacman",
     "Tile",
+    "GameView",
 ]

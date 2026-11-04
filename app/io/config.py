@@ -1,8 +1,9 @@
 import json
 import os
 import re
-from typing import Any
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from typing import Any, ClassVar
+from pydantic import (BaseModel, ConfigDict, Field, field_validator,
+                      model_validator)
 
 
 class LevelConfig(BaseModel):
@@ -35,8 +36,10 @@ class LevelConfig(BaseModel):
 
 class GameConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
+    DEFAULT_HUD_HEIGHT: ClassVar[int] = 40
 
     highscore_filename: str = "highscores.json"
+    hud_height: int = DEFAULT_HUD_HEIGHT
     lives: int = 3
     level_max_time: int = 90
     seed: int = 42
@@ -45,6 +48,25 @@ class GameConfig(BaseModel):
     points_per_super_pacgum: int = 50
     points_per_ghost: int = 200
     levels: list[LevelConfig] = Field(default_factory=lambda: [LevelConfig()])
+
+    @model_validator(mode="before")
+    @classmethod
+    def warn_missing_hud_height(cls, values: Any) -> Any:
+        """Warn when the HUD height is missing and use its default."""
+        if isinstance(values, dict) and "hud_height" not in values:
+            print("[Config Warning] Missing 'hud_height'. Using default "
+                  f"{cls.DEFAULT_HUD_HEIGHT}.")
+        return values
+
+    @field_validator("hud_height", mode="before")
+    @classmethod
+    def validate_hud_height(cls, value: Any) -> int:
+        """Use 40 pixels if the HUD height cannot fit the default font."""
+        if type(value) is int and value >= 20:
+            return value
+        print("[Config Warning] Invalid 'hud_height'. Using default "
+              f"{cls.DEFAULT_HUD_HEIGHT}.")
+        return cls.DEFAULT_HUD_HEIGHT
 
     @field_validator("lives", mode="before")
     @classmethod
@@ -105,6 +127,7 @@ class GameConfig(BaseModel):
         )
         return (
             "GameConfig(\n"
+            f"  hud_height={self.hud_height},\n"
             f"  lives={self.lives},\n"
             f"  level_max_time={self.level_max_time},\n"
             f"  seed={self.seed},\n"
