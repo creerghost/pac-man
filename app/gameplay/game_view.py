@@ -42,6 +42,7 @@ class GameView:
                     + (available_height - maze.height * size) // 2)
 
         blue, white = name_to_rgb("blue"), name_to_rgb("white")
+        # shortcut: tiles under 3px cannot show two dot sizes; add zoom later.
         max_radius = (size - 1) // 2
         dot_radius = min(max_radius, size // 10)
         super_radius = min(max_radius, max(1, size // 4))
@@ -53,6 +54,7 @@ class GameView:
                 x + size // 2, y + size // 2, super_radius, white),
             Tile.EMPTY: lambda x, y: None,
         }
+        # shortcut: full redraw is slow; cache walls when Canvas supports it.
         canvas.mlx_clear_window(name_to_rgb("black"))
         for y in range(maze.height):
             for x in range(maze.width):
