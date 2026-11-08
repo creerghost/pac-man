@@ -2,8 +2,13 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from webcolors import IntegerRGB
 
+from .ui import UI
+
 
 class Canvas(ABC):
+    def __init__(self, ui: Optional[UI] = None) -> None:
+        self.ui: UI = ui if ui is not None else UI()
+
     @abstractmethod
     def set_font(self, font_path: Optional[str] = None,
                  size: int = 20) -> None:
