@@ -23,6 +23,9 @@ class SceneManager:
     def handle_command(self, command: Command) -> None:
         self._current_scene.handle_command(command)
 
+    def handle_text(self, text: str) -> None:
+        self._current_scene.handle_text(text)
+
     def update(self, dt: float) -> None:
         transition, payload = self._current_scene.update(dt)
         self._route_transition(transition, payload)
