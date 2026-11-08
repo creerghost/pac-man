@@ -1,71 +1,63 @@
-"""Draw the maze and its occupants through the Canvas contract."""
+"""Draw the current gameplay state through the shared Canvas contract."""
 
 from math import ceil
-from typing import Callable
 
-from webcolors import name_to_rgb
+from webcolors import IntegerRGB
 
 from app.core.canvas import Canvas
-from app.io.config import GameConfig
+from app.core.ui import Color
 
-from .maze import Maze
-from .pacman import Pacman
+from .game_state import GameState
+from .ghosts import GhostState
 from .tile import Tile
 
 
 class GameView:
-    """Render a maze inside a window, leaving space for its HUD."""
-    def __init__(self, width: int, height: int, config: GameConfig) -> None:
-        """Use the window dimensions and HUD height to lay out the view."""
-        self._width = width
-        self._height = height
-        self._hud_height = config.hud_height
+    """Render a game state using the canvas's shared UI metrics."""
 
-    def render(self, canvas: Canvas, maze: Maze, pacman: Pacman, score: int,
-               lives: int, remaining_time: float, level: int) -> None:
-        """Draw the current maze, player and HUD values onto canvas."""
+    def render(self, canvas: Canvas, game: GameState) -> None:
+        """Draw the maze, entities, and current HUD values."""
+        maze = game.maze
         if maze.width <= 0 or maze.height <= 0:
             raise ValueError("The maze dimensions must be positive.")
-        default_height = GameConfig.DEFAULT_HUD_HEIGHT
-        if (self._width >= maze.width
-                and self._height - self._hud_height < maze.height
-                and self._height - default_height >= maze.height):
-            print("[Config Warning] 'hud_height' leaves no room for the "
-                  f"maze. Using default {default_height}.")
-            self._hud_height = default_height
-        available_height = self._height - self._hud_height
-        size = min(self._width // maze.width, available_height // maze.height)
-        if size < 1:
+        ui = canvas.ui
+        size, offset_x, offset_y = ui.maze_layout(maze.width, maze.height)
+        if (offset_x < 0 or offset_y < ui.font_small
+                or offset_x + maze.width * size > ui.width
+                or offset_y + maze.height * size > ui.height):
             raise ValueError("The window is too small for the maze and HUD.")
-        offset_x = (self._width - maze.width * size) // 2
-        offset_y = (self._hud_height
-                    + (available_height - maze.height * size) // 2)
 
-        blue, white = name_to_rgb("blue"), name_to_rgb("white")
-        # shortcut: tiles under 3px cannot show two dot sizes; add zoom later.
+        canvas.mlx_clear_window(Color.BLACK)
         max_radius = (size - 1) // 2
-        dot_radius = min(max_radius, size // 10)
-        super_radius = min(max_radius, max(1, size // 4))
-        draw: dict[Tile, Callable[[int, int], None]] = {
-            Tile.WALL: lambda x, y: canvas.draw_rect(x, y, size, size, blue),
-            Tile.PACGUM: lambda x, y: canvas.draw_circle(
-                x + size // 2, y + size // 2, dot_radius, white),
-            Tile.SUPER_PACGUM: lambda x, y: canvas.draw_circle(
-                x + size // 2, y + size // 2, super_radius, white),
-            Tile.EMPTY: lambda x, y: None,
-        }
-        # shortcut: full redraw is slow; cache walls when Canvas supports it.
-        canvas.mlx_clear_window(name_to_rgb("black"))
         for y in range(maze.height):
             for x in range(maze.width):
-                draw[maze.tile_at(x, y)](offset_x + x * size,
-                                         offset_y + y * size)
-        player_x = int(offset_x + (pacman.x + 0.5) * size)
-        player_y = int(offset_y + (pacman.y + 0.5) * size)
-        player_radius = min(max_radius, max(1, size * 2 // 5))
-        canvas.draw_circle(player_x, player_y, player_radius,
-                           name_to_rgb("yellow"))
-        seconds = max(0, ceil(remaining_time))
-        text = (f"SCORE: {score}   LIVES: {lives}   "
-                f"TIME: {seconds}   LEVEL: {level}")
-        canvas.mlx_string_put(0, 0, white, text)
+                tile = maze.tile_at(x, y)
+                left, top = offset_x + x * size, offset_y + y * size
+                if tile == Tile.WALL:
+                    canvas.draw_rect(left, top, size, size, Color.BLUE)
+                elif tile in (Tile.PACGUM, Tile.SUPER_PACGUM):
+                    radius = (size // 10 if tile == Tile.PACGUM
+                              else max(1, size // 4))
+                    canvas.draw_circle(left + size // 2, top + size // 2,
+                                       min(max_radius, radius), Color.WHITE)
+
+        def draw_entity(x: float, y: float, color: IntegerRGB) -> None:
+            canvas.draw_circle(int(offset_x + (x + 0.5) * size),
+                               int(offset_y + (y + 0.5) * size),
+                               min(max_radius, max(1, size * 2 // 5)), color)
+
+        draw_entity(game.pacman.x, game.pacman.y, Color.YELLOW)
+        ghost_colors = (Color.RED, Color.PINK, Color.CYAN, Color.ORANGE)
+        for index, ghost in enumerate(game.ghosts):
+            color = ghost_colors[index % len(ghost_colors)]
+            if ghost.state == GhostState.FRIGHTENED:
+                color = Color.NEON_BLUE
+            elif ghost.state in (GhostState.EATEN, GhostState.RESPAWNING):
+                color = Color.WHITE
+            draw_entity(ghost.x, ghost.y, color)
+
+        canvas.set_font(size=ui.font_small)
+        seconds = max(0, ceil(game.remaining_time))
+        text = (f"SCORE: {game.score}   LIVES: {game.lives}   "
+                f"TIME: {seconds}   LEVEL: {game.level}")
+        canvas.mlx_string_put(ui.margin_x, 0, Color.WHITE, text)

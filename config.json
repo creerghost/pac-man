@@ -1,6 +1,5 @@
 {
     "highscore_filename": "highscores.json",
-    "hud_height": 40,
     "lives": 3,
     "level_max_time": 90,
     "seed": 42,

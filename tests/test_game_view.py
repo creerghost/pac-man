@@ -1,162 +1,75 @@
-"""Checks for drawing the gameplay view through the Canvas contract."""
+"""Checks for drawing gameplay using the shared UI and game state."""
 
 from typing import cast
 from unittest.mock import Mock, call
 
 import pytest
-from pytest import CaptureFixture
-from webcolors import name_to_rgb
 
 from app.core.canvas import Canvas
+from app.core.ui import Color, UI
+from app.gameplay.game_state import GameState
 from app.gameplay.game_view import GameView
+from app.gameplay.ghosts import GhostState
 from app.gameplay.maze import Maze
-from app.gameplay.pacman import Pacman
 from app.gameplay.tile import Tile
-from app.io.config import GameConfig
 
 
-def make_maze(tiles: list[list[Tile]]) -> Maze:
-    """Create a Maze double that returns tiles from the given grid."""
+def make_game(tiles: list[list[Tile]]) -> GameState:
     maze = Mock(spec=Maze)
     maze.width = len(tiles[0])
     maze.height = len(tiles)
     maze.tile_at.side_effect = lambda x, y: tiles[y][x]
-    return cast(Maze, maze)
+    game = Mock(spec=GameState)
+    game.maze = maze
+    game.pacman = Mock(x=1.0, y=0.0)
+    game.ghosts = ()
+    game.score, game.lives, game.remaining_time, game.level = 120, 2, 10.2, 4
+    return cast(GameState, game)
 
 
-def test_wall_is_centered_in_space_below_hud() -> None:
-    """Fit and center a non-square maze in the area below the HUD."""
-    maze = make_maze([[Tile.WALL, Tile.EMPTY, Tile.EMPTY],
-                      [Tile.EMPTY, Tile.EMPTY, Tile.EMPTY]])
+def test_draws_state_with_shared_layout_and_palette() -> None:
+    game = make_game([[Tile.WALL, Tile.PACGUM, Tile.SUPER_PACGUM, Tile.EMPTY]])
     canvas = Mock(spec=Canvas)
-    view = GameView(200, 200, GameConfig())
+    canvas.ui = UI()
+    size, x, y = canvas.ui.maze_layout(4, 1)
 
-    view.render(canvas, maze, Pacman((1.0, 1.0), 1.0), 0, 3, 90, 1)
+    GameView().render(canvas, game)
 
-    canvas.draw_rect.assert_called_once_with(
-        1, 54, 66, 66, name_to_rgb("blue"))
-
-
-def test_maze_and_pacman_are_drawn_at_tile_centers() -> None:
-    """Draw both pellet sizes and Pac-Man, leaving empty tiles blank."""
-    maze = make_maze([[Tile.WALL, Tile.PACGUM, Tile.SUPER_PACGUM, Tile.EMPTY]])
-    canvas = Mock(spec=Canvas)
-    view = GameView(200, 100, GameConfig())
-
-    view.render(canvas, maze, Pacman((0.5, 0.0), 1.0), 0, 3, 90, 1)
-
-    canvas.mlx_clear_window.assert_called_once_with(name_to_rgb("black"))
+    canvas.mlx_clear_window.assert_called_once_with(Color.BLACK)
+    canvas.draw_rect.assert_called_once_with(x, y, size, size, Color.BLUE)
     assert canvas.draw_circle.call_args_list == [
-        call(75, 70, 5, name_to_rgb("white")),
-        call(125, 70, 12, name_to_rgb("white")),
-        call(50, 70, 20, name_to_rgb("yellow")),
+        call(x + size + size // 2, y + size // 2, size // 10, Color.WHITE),
+        call(x + 2 * size + size // 2, y + size // 2, size // 4, Color.WHITE),
+        call(int(x + 1.5 * size), int(y + 0.5 * size),
+             size * 2 // 5, Color.YELLOW),
     ]
-    canvas.draw_rect.assert_called_once_with(
-        0, 45, 50, 50, name_to_rgb("blue"))
+    canvas.set_font.assert_called_once_with(size=canvas.ui.font_small)
+    canvas.mlx_string_put.assert_called_once_with(
+        canvas.ui.margin_x, 0, Color.WHITE,
+        "SCORE: 120   LIVES: 2   TIME: 11   LEVEL: 4")
 
 
-def test_hud_shows_current_values_each_frame() -> None:
-    """Show updated values and round remaining seconds up for display."""
-    maze = make_maze([[Tile.EMPTY]])
+def test_ghosts_follow_positions_and_state() -> None:
+    game = make_game([[Tile.EMPTY] * 4])
+    game.ghosts = (Mock(x=0.0, y=0.0, state=GhostState.CHASE),
+                   Mock(x=1.0, y=0.0, state=GhostState.FRIGHTENED),
+                   Mock(x=2.0, y=0.0, state=GhostState.EATEN))
     canvas = Mock(spec=Canvas)
-    pacman = Pacman((0.0, 0.0), 1.0)
-    view = GameView(800, 600, GameConfig())
-
-    view.render(canvas, maze, pacman, 120, 2, 10.2, 4)
-    view.render(canvas, maze, pacman, 130, 1, 0.0, 5)
-
-    assert canvas.mlx_string_put.call_args_list == [
-        call(0, 0, name_to_rgb("white"),
-             "SCORE: 120   LIVES: 2   TIME: 11   LEVEL: 4"),
-        call(0, 0, name_to_rgb("white"),
-             "SCORE: 130   LIVES: 1   TIME: 0   LEVEL: 5"),
-    ]
+    canvas.ui = UI()
+    GameView().render(canvas, game)
+    assert [c.args[3] for c in canvas.draw_circle.call_args_list] == [
+        Color.YELLOW, Color.RED, Color.NEON_BLUE, Color.WHITE]
 
 
-@pytest.mark.parametrize("width,height", [(0, 100), (100, 40), (1, 41)])
-def test_window_too_small_for_maze_raises_clear_error(
-        width: int, height: int) -> None:
-    """Reject a viewport that cannot fit even one pixel per tile."""
-    maze = make_maze([[Tile.EMPTY, Tile.EMPTY]])
-    view = GameView(width, height, GameConfig())
+def test_invalid_maze_is_rejected() -> None:
+    canvas = Mock(spec=Canvas)
+    canvas.ui = UI()
+    with pytest.raises(ValueError, match="dimensions"):
+        GameView().render(canvas, make_game([[]]))
 
+
+def test_oversized_maze_is_rejected() -> None:
+    canvas = Mock(spec=Canvas)
+    canvas.ui = UI()
     with pytest.raises(ValueError, match="too small"):
-        view.render(Mock(spec=Canvas), maze, Pacman((0.0, 0.0), 1.0),
-                    0, 3, 90, 1)
-
-
-def test_zero_width_maze_raises_clear_error() -> None:
-    """Reject an empty maze before calculating a viewport."""
-    view = GameView(800, 600, GameConfig())
-
-    with pytest.raises(ValueError, match="maze dimensions"):
-        view.render(Mock(spec=Canvas), make_maze([[]]),
-                    Pacman((0.0, 0.0), 1.0), 0, 3, 90, 1)
-
-
-def test_single_pixel_tiles_do_not_produce_negative_radii() -> None:
-    """Keep circles drawable even when the maze fits at one pixel per tile."""
-    canvas = Mock(spec=Canvas)
-    maze = make_maze([[Tile.PACGUM, Tile.SUPER_PACGUM]])
-    view = GameView(2, 41, GameConfig())
-
-    view.render(canvas, maze, Pacman((0.0, 0.0), 1.0), 0, 3, 90, 1)
-
-    assert canvas.draw_circle.call_args_list == [
-        call(0, 40, 0, name_to_rgb("white")),
-        call(1, 40, 0, name_to_rgb("white")),
-        call(0, 40, 0, name_to_rgb("yellow")),
-    ]
-
-
-@pytest.mark.parametrize("height", [0, 19, -1, True, None, "bad", 20.5])
-def test_invalid_hud_height_uses_default_with_one_warning(
-        height: object, capsys: CaptureFixture[str]) -> None:
-    """Use the default HUD height and warn once for an invalid value."""
-    config = GameConfig.model_validate({"hud_height": height})
-
-    assert config.hud_height == 40
-    output = capsys.readouterr().out.splitlines()
-    assert len(output) == 1 and "hud_height" in output[0] and "40" in output[0]
-
-
-def test_missing_hud_height_uses_default_with_one_warning(
-        capsys: CaptureFixture[str]) -> None:
-    """Use the default HUD height and warn once when the key is missing."""
-    config = GameConfig.model_validate({})
-
-    assert config.hud_height == 40
-    output = capsys.readouterr().out.splitlines()
-    assert len(output) == 1 and "hud_height" in output[0] and "40" in output[0]
-
-
-def test_custom_hud_height_changes_maze_offset() -> None:
-    """Reserve the configured height when positioning the maze."""
-    canvas = Mock(spec=Canvas)
-    maze = make_maze([[Tile.WALL, Tile.EMPTY, Tile.EMPTY],
-                      [Tile.EMPTY, Tile.EMPTY, Tile.EMPTY]])
-    view = GameView(200, 200, GameConfig(hud_height=60))
-
-    view.render(canvas, maze, Pacman((1.0, 1.0), 1.0), 0, 3, 90, 1)
-
-    canvas.draw_rect.assert_called_once_with(
-        1, 64, 66, 66, name_to_rgb("blue"))
-
-
-def test_hud_too_tall_for_maze_uses_default_once(
-        capsys: CaptureFixture[str]) -> None:
-    """Fall back to the default when the configured HUD leaves no maze room."""
-    maze = make_maze([[Tile.WALL, Tile.EMPTY], [Tile.EMPTY, Tile.EMPTY]])
-    canvas = Mock(spec=Canvas)
-    pacman = Pacman((1.0, 1.0), 1.0)
-    view = GameView(200, 100, GameConfig(hud_height=100))
-
-    view.render(canvas, maze, pacman, 0, 3, 90, 1)
-    view.render(canvas, maze, pacman, 0, 3, 90, 1)
-
-    assert canvas.draw_rect.call_args_list == [
-        call(70, 40, 30, 30, name_to_rgb("blue")),
-        call(70, 40, 30, 30, name_to_rgb("blue")),
-    ]
-    output = capsys.readouterr().out.splitlines()
-    assert len(output) == 1 and "hud_height" in output[0] and "40" in output[0]
+        GameView().render(canvas, make_game([[Tile.EMPTY] * 1000]))
