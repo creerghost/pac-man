@@ -59,7 +59,7 @@ class HighscoreRepository:
                     continue
 
             records.sort(key=lambda r: r.score, reverse=True)
-            return records[: self.MAX_RECORDS]
+            return records
 
         except Exception:
             return []
@@ -96,6 +96,4 @@ class HighscoreRepository:
             records.append(new_record)
 
         records.sort(key=lambda r: r.score, reverse=True)
-        top_records = records[: self.MAX_RECORDS]
-
-        self.save(top_records)
+        self.save(records)
