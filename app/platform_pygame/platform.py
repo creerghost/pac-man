@@ -1,15 +1,14 @@
 from typing import Optional
 import pygame
 
-from app.core import Canvas, Command, Platform
+from app.core import Canvas, Command, Platform, UI
 from .canvas import PygameCanvas
 
 
 class PygamePlatform(Platform):
-    def __init__(self, width: int, height: int,
+    def __init__(self, ui: Optional[UI] = None,
                  title: str = "Pac-Man") -> None:
-        self._width = width
-        self._height = height
+        self._ui = ui if ui is not None else UI()
         self._title = title
 
         self._screen: Optional[pygame.Surface] = None
@@ -18,10 +17,12 @@ class PygamePlatform(Platform):
 
     def initialize(self) -> None:
         pygame.init()
-        self._screen = pygame.display.set_mode((self._width, self._height))
+        self._screen = pygame.display.set_mode(
+            (self._ui.width, self._ui.height)
+        )
         pygame.display.set_caption(self._title)
         self._clock = pygame.time.Clock()
-        self._canvas = PygameCanvas(self._screen)
+        self._canvas = PygameCanvas(self._screen, self._ui)
 
     def _map_key_to_command(self, key: int) -> Optional[Command]:
         match key:
@@ -33,11 +34,11 @@ class PygamePlatform(Platform):
                 return Command.LEFT
             case pygame.K_RIGHT | pygame.K_d:
                 return Command.RIGHT
-            case pygame.K_RETURN | pygame.K_SPACE:
+            case pygame.K_RETURN:
                 return Command.CONFIRM
             case pygame.K_ESCAPE:
                 return Command.CANCEL
-            case pygame.K_p:
+            case pygame.K_p | pygame.K_SPACE:
                 return Command.PAUSE
             case pygame.K_BACKSPACE:
                 return Command.DELETE

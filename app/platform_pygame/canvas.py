@@ -2,21 +2,21 @@ from typing import Optional
 import pygame
 from webcolors import IntegerRGB
 
-from app.core import Canvas
+from app.core import Canvas, UI
 
 
 class PygameCanvas(Canvas):
     def __init__(self, screen: Optional[pygame.Surface] = None,
-                 default_font_path: Optional[str] = None,
-                 default_size: int = 20) -> None:
+                 ui: Optional[UI] = None) -> None:
+        super().__init__(ui)
         self.screen = screen
-        self._current_font_path = default_font_path
-        self._current_size = default_size
+        self._current_font_path: Optional[str] = self.ui.font_path
+        self._current_size: int = self.ui.font_text
         self._fonts: dict[tuple[Optional[str], int], pygame.font.Font] = {}
 
     def set_font(self, font_path: Optional[str] = None,
                  size: int = 20) -> None:
-        self._current_font_path = font_path
+        self._current_font_path = font_path or self.ui.font_path
         self._current_size = size
 
     def _get_font(self, path: Optional[str], size: int) -> pygame.font.Font:
