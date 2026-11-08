@@ -1,10 +1,14 @@
+from .ui import Color, UI
 from .canvas import Canvas
 from .command import Command
+from .transition import Transition
+from .scene import Scene
 from .platform import Platform
 from .scene_manager import SceneManager
-from .transition import Transition
 from .game_engine import GameEngine
-from .scene import Scene
 
-__all__ = ["Canvas", "Command", "Platform", "SceneManager", "Transition",
-           "GameEngine", "Scene"]
+
+__all__ = [
+    "Canvas", "Color", "Command", "Platform", "SceneManager", "Transition",
+    "GameEngine", "Scene", "UI"
+]
