@@ -23,6 +23,10 @@ class Scene(ABC):
     def handle_command(self, command: Command) -> None:
         pass
 
+    def handle_text(self, text: str) -> None:
+        """Handle typed text when a scene accepts text input."""
+        pass
+
     @abstractmethod
     def update(self, dt: float) -> tuple[Transition, Any]:
         pass

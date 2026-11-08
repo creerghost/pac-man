@@ -57,9 +57,9 @@ class PygamePlatform(Platform):
             case _:
                 return None
 
-    def poll_commands(self) -> tuple[bool, list[Command]]:
+    def poll_commands(self) -> tuple[bool, list[Command | str]]:
         should_quit = False
-        commands: list[Command] = []
+        commands: list[Command | str] = []
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -68,6 +68,9 @@ class PygamePlatform(Platform):
                 cmd = self._map_key_to_command(event.key)
                 if cmd is not None:
                     commands.append(cmd)
+                text = getattr(event, "unicode", "")
+                if text and text.isprintable():
+                    commands.append(text)
 
         return should_quit, commands
 

@@ -10,7 +10,7 @@ class Platform(ABC):
         pass
 
     @abstractmethod
-    def poll_commands(self) -> Tuple[bool, List[Command]]:
+    def poll_commands(self) -> Tuple[bool, List[Command | str]]:
         pass
 
     @abstractmethod

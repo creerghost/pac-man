@@ -1,3 +1,4 @@
+from .command import Command
 from .platform import Platform
 from .scene_manager import SceneManager
 
@@ -22,7 +23,10 @@ class GameEngine:
                 if should_quit:
                     break
                 for cmd in commands:
-                    self._scene_manager.handle_command(cmd)
+                    if isinstance(cmd, Command):
+                        self._scene_manager.handle_command(cmd)
+                    else:
+                        self._scene_manager.handle_text(cmd)
                 self._scene_manager.update(dt)
                 if self._scene_manager.should_quit:
                     break
