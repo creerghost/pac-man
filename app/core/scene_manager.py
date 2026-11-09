@@ -7,15 +7,14 @@ from .scene import Scene
 
 from app.io import GameConfig
 from app.scenes import (GameOverScene, HighscoresScene, InstructionsScene,
-                        MainMenuScene, VictoryScene)
-from app.utils.test_scene import FirstScene
+                        MainMenuScene, VictoryScene, GameplayScene)
 
 
 class SceneManager:
     def __init__(self, start: Transition, config: GameConfig) -> None:
         self._config = config
         self._routes: dict[Transition, Callable[[GameConfig], Scene]] = {
-            Transition.START_GAME: FirstScene,
+            Transition.START_GAME: GameplayScene,
             Transition.OPEN_HIGHSCORES: HighscoresScene,
             Transition.OPEN_INSTRUCTIONS: InstructionsScene,
             Transition.BACK_TO_MENU: MainMenuScene,
