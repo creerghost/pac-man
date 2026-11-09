@@ -23,6 +23,11 @@ class ModeSchedule:
         """Return True while the fright timer is running."""
         return self._fright_left > 0
 
+    @property
+    def frightened_time_left(self) -> float:
+        """Return the remaining frightened time in seconds."""
+        return self._fright_left
+
     def reset(self) -> None:
         """Restart the cycle in scatter and cancel any fright."""
         self._mode = GhostState.SCATTER

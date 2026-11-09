@@ -42,6 +42,9 @@ class InvincibleDamageHandler(DamageHandler):
 class GameState:
     """Coordinate the maze, Pac-Man, ghosts, score, lives, and level rules."""
 
+    _death_pause = 1.0
+    _ghost_eaten_pause = 0.5
+
     def __init__(self, config: GameConfig, pacman_speed: float = 7.0,
                  ghost_speed: float = 6.0) -> None:
         """Initialize a new game session from configuration."""
@@ -59,6 +62,9 @@ class GameState:
         self.damage_handler: DamageHandler = NormalDamageHandler()
         self.ghosts_frozen: bool = False
         self._speed_multiplier: float = 1.0
+        self.animation_time = 0.0
+        self._pause_left = 0.0
+        self._death_pending = False
 
         self.maze: Maze = self._build_level_maze(self.level)
         self.pacman: Pacman = self._create_pacman()
@@ -88,37 +94,59 @@ class GameState:
         if dt <= 0 or self.is_game_over or self.is_victory:
             return
 
-        self.remaining_time -= dt
-        if self.remaining_time <= 0:
-            self.remaining_time = 0.0
-            self.is_game_over = True
-            return
+        self.animation_time += dt
+        dt = self._update_pause(dt)
+        if dt > 0 and not self.is_game_over:
+            self.remaining_time -= dt
+            if self.remaining_time <= 0:
+                self.remaining_time = 0.0
+                self.is_game_over = True
+                return
+            self._update_movement(dt)
 
+    def _update_pause(self, dt: float) -> float:
+        """Advance an active pause and return time available for gameplay."""
+        if self._pause_left > 0:
+            paused = min(dt, self._pause_left)
+            self._pause_left -= paused
+            dt -= paused
+            if self._pause_left > 1e-9:
+                return 0.0
+            self._pause_left = 0.0
+            if self._death_pending:
+                self._death_pending = False
+                if self.lives == 0:
+                    self.is_game_over = True
+                    return 0.0
+                self.reset_positions()
+        return dt
+
+    def _update_movement(self, dt: float) -> bool:
+        """Advance movement and interactions; stop after a transition."""
         self.pacman.update(dt * self._speed_multiplier, self.maze)
         self._consume_pellet()
 
         if self.maze.pacgums_left() == 0:
             self.next_level()
-            return
+            return False
 
         lives_before = self.lives
         self._check_ghost_collisions()
-        if self.is_game_over or self.lives != lives_before:
-            return
+        if self.is_game_over or self.lives != lives_before or self._pause_left:
+            return False
 
         if not self.ghosts_frozen:
             pac_pos = (self.pacman.x, self.pacman.y)
             self.ghost_group.update(dt, self.maze, pac_pos)
             self._check_ghost_collisions()
+        return (not self.is_game_over and self.lives == lives_before
+                and self._pause_left == 0)
 
     def kill_pacman(self) -> None:
-        """Lose one life and either end the game or reset entity positions."""
-        self.lives -= 1
-        if self.lives <= 0:
-            self.lives = 0
-            self.is_game_over = True
-        else:
-            self.reset_positions()
+        """Freeze at the collision before respawning or ending the game."""
+        self.lives = max(0, self.lives - 1)
+        self._death_pending = True
+        self._pause_left = self._death_pause
 
     def reset_positions(self) -> None:
         """Place Pac-Man and all ghosts back on their spawn tiles."""
@@ -128,6 +156,8 @@ class GameState:
 
     def next_level(self) -> None:
         """Advance to the next level or mark the game as won."""
+        self._pause_left = 0.0
+        self._death_pending = False
         if self.level >= len(self._config.levels):
             self.is_victory = True
             return
@@ -182,6 +212,8 @@ class GameState:
             if ghost.state == GhostState.FRIGHTENED:
                 ghost.eat()
                 self.score += self._config.points_per_ghost
+                self._pause_left = self._ghost_eaten_pause
+                break
             elif ghost.state in (GhostState.CHASE, GhostState.SCATTER):
                 self.damage_handler.handle_hit(self)
                 break

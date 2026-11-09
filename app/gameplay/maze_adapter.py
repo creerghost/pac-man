@@ -12,6 +12,7 @@ class MazeAdapter(Maze):
     """A Maze built from the tile-converted output of a MazeGenerator."""
     def __init__(self, generator: MazeGenerator) -> None:
         self._grid = self._to_tiles(generator.maze)
+        self._forty_two_tiles = self._find_forty_two(generator.maze)
         self._ghost_spawns = self._corners()
         for x, y in self._ghost_spawns:
             self.set_tile(x, y, Tile.SUPER_PACGUM)
@@ -26,6 +27,11 @@ class MazeAdapter(Maze):
     @property
     def height(self) -> int:
         return len(self._grid)
+
+    @property
+    def forty_two_tiles(self) -> frozenset[tuple[int, int]]:
+        """Return the wall tiles occupied by the generator's 42."""
+        return self._forty_two_tiles
 
     def tile_at(self, x: int, y: int) -> Tile:
         if not self._in_bounds(x, y):
@@ -66,6 +72,20 @@ class MazeAdapter(Maze):
                 if not mask & SOUTH:
                     grid[2*cy+2][2*cx+1] = Tile.PACGUM
         return grid
+
+    def _find_forty_two(
+        self, cells: list[list[int]]
+    ) -> frozenset[tuple[int, int]]:
+        """Map each sealed generator cell to its corresponding wall tiles."""
+        tiles = set()
+        for cy, row in enumerate(cells):
+            for cx, mask in enumerate(row):
+                if mask == SEALED:
+                    for y in range(2 * cy, 2 * cy + 3):
+                        for x in range(2 * cx, 2 * cx + 3):
+                            if self.tile_at(x, y) == Tile.WALL:
+                                tiles.add((x, y))
+        return frozenset(tiles)
 
     def _in_bounds(self, x: int, y: int) -> bool:
         """Return True if column x and row y lie inside the grid."""

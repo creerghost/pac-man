@@ -47,17 +47,25 @@ class PygameCanvas(Canvas):
 
     def draw_rect(self, x: int, y: int, w: int, h: int,
                   color: IntegerRGB) -> None:
-        for dx in range(w):
-            for dy in range(h):
-                self._mlx_pixel_put(x + dx, y + dy, color)
+        if self.screen is None:
+            return
+        width, height = self.screen.get_size()
+        rgb = (color.red, color.green, color.blue)
+        for px in range(max(0, x), min(width, x + w)):
+            for py in range(max(0, y), min(height, y + h)):
+                self.screen.set_at((px, py), rgb)
 
     def draw_circle(self, x: int, y: int, radius: int,
                     color: IntegerRGB) -> None:
+        if self.screen is None:
+            return
+        width, height = self.screen.get_size()
+        rgb = (color.red, color.green, color.blue)
         r_squared = radius * radius
-        for dy in range(-radius, radius + 1):
-            for dx in range(-radius, radius + 1):
-                if dx * dx + dy * dy <= r_squared:
-                    self._mlx_pixel_put(x + dx, y + dy, color)
+        for py in range(max(0, y - radius), min(height, y + radius + 1)):
+            for px in range(max(0, x - radius), min(width, x + radius + 1)):
+                if (px - x) ** 2 + (py - y) ** 2 <= r_squared:
+                    self.screen.set_at((px, py), rgb)
 
     def draw_line(self, x1: int, y1: int, x2: int, y2: int,
                   color: IntegerRGB, thickness: int = 1) -> None:
