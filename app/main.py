@@ -15,7 +15,7 @@ def main() -> None:
     ui = UI()
 
     platform = PygamePlatform(ui=ui, title="Pac-Man")
-    scene_manager = SceneManager(start=Transition.START_GAME, config=config)
+    scene_manager = SceneManager(start=Transition.BACK_TO_MENU, config=config)
     engine = GameEngine(
         platform=platform,
         scene_manager=scene_manager,
