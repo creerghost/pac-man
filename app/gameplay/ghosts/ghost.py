@@ -56,6 +56,13 @@ class Ghost(MovableEntity):
         """Return the speed in tiles per second for the current state."""
         return self._speed * self._speed_factors.get(self.state, 1.0)
 
+    @property
+    def frightened_time_left(self) -> float:
+        """Return the shared frightened time while this ghost is frightened."""
+        if self.state != GhostState.FRIGHTENED:
+            return 0.0
+        return self._schedule.frightened_time_left
+
     def set_pacman_position(self, pos: tuple[float, float]) -> None:
         """Update Pac-Man's position for targeting and fleeing."""
         self._pacman = pos

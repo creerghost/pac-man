@@ -81,11 +81,13 @@ class UI:
                     maze_rows: int) -> tuple[int, int, int]:
         """Return (tile_size, offset_x, offset_y) fitting maze on screen."""
         avail_w = self.width - 2 * self.margin_x
-        avail_h = self.height - 2 * self.margin_y
+        top = self.font_small + self.scaled(12)
+        bottom = self.scaled(12)
+        avail_h = self.height - top - bottom
         tile_size = max(
             4,
             min(avail_w // max(1, maze_cols), avail_h // max(1, maze_rows)),
         )
         offset_x = (self.width - maze_cols * tile_size) // 2
-        offset_y = (self.height - maze_rows * tile_size) // 2
+        offset_y = top + (avail_h - maze_rows * tile_size) // 2
         return tile_size, offset_x, offset_y

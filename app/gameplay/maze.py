@@ -6,6 +6,11 @@ from .tile import Tile
 class Maze(ABC):
     """A grid of tiles that the game logic and the view read."""
     @property
+    def forty_two_tiles(self) -> frozenset[tuple[int, int]]:
+        """Return wall tiles belonging to the generator's 42 decoration."""
+        return frozenset()
+
+    @property
     @abstractmethod
     def width(self) -> int:
         """Return the number of tile columns."""
