@@ -214,7 +214,7 @@ class GameState:
                 self.score += self._config.points_per_ghost
                 self._pause_left = self._ghost_eaten_pause
                 break
-            elif ghost.state in (GhostState.CHASE, GhostState.SCATTER):
+            elif ghost.state == GhostState.CHASE:
                 self.damage_handler.handle_hit(self)
                 break
 
