@@ -38,8 +38,6 @@ class Ghost(MovableEntity):
         self._choosers: dict[GhostState, Chooser] = {
             GhostState.CHASE: lambda maze, pos: self._toward(
                 maze, pos, strategy.target(self._pacman, pos)),
-            GhostState.SCATTER: lambda maze, pos: self._toward(
-                maze, pos, self._spawn),
             GhostState.FRIGHTENED: self._flee,
             GhostState.EATEN: self._path_home,
         }
