@@ -31,7 +31,7 @@ class ModeSchedule:
 
     def frighten(self) -> None:
         """Start or refresh the fright timer."""
-        self._fright_left = 6.0
+        self._fright_left = 8.0
 
     def update(self, dt: float) -> None:
         """Advance the fright timer by dt seconds."""
