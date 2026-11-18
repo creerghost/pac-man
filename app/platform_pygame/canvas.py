@@ -2,7 +2,8 @@ from typing import Optional
 import pygame
 from webcolors import IntegerRGB
 
-from app.core import Canvas, UI
+from app.core import Canvas, Texture, UI
+from .texture import PygameTexture
 
 
 class PygameCanvas(Canvas):
@@ -13,6 +14,7 @@ class PygameCanvas(Canvas):
         self._current_font_path: Optional[str] = self.ui.font_path
         self._current_size: int = self.ui.font_text
         self._fonts: dict[tuple[Optional[str], int], pygame.font.Font] = {}
+        self._textures: dict[str, PygameTexture] = {}
 
     def set_font(self, font_path: Optional[str] = None,
                  size: int = 20) -> None:
@@ -47,46 +49,33 @@ class PygameCanvas(Canvas):
 
     def draw_rect(self, x: int, y: int, w: int, h: int,
                   color: IntegerRGB) -> None:
-        if self.screen is None:
-            return
-        width, height = self.screen.get_size()
-        rgb = (color.red, color.green, color.blue)
-        for px in range(max(0, x), min(width, x + w)):
-            for py in range(max(0, y), min(height, y + h)):
-                self.screen.set_at((px, py), rgb)
+        if self.screen is not None:
+            pygame.draw.rect(
+                self.screen,
+                (color.red, color.green, color.blue),
+                (x, y, w, h)
+            )
 
     def draw_circle(self, x: int, y: int, radius: int,
                     color: IntegerRGB) -> None:
-        if self.screen is None:
-            return
-        width, height = self.screen.get_size()
-        rgb = (color.red, color.green, color.blue)
-        r_squared = radius * radius
-        for py in range(max(0, y - radius), min(height, y + radius + 1)):
-            for px in range(max(0, x - radius), min(width, x + radius + 1)):
-                if (px - x) ** 2 + (py - y) ** 2 <= r_squared:
-                    self.screen.set_at((px, py), rgb)
+        if self.screen is not None:
+            pygame.draw.circle(
+                self.screen,
+                (color.red, color.green, color.blue),
+                (x, y),
+                radius
+            )
 
     def draw_line(self, x1: int, y1: int, x2: int, y2: int,
                   color: IntegerRGB, thickness: int = 1) -> None:
-        dx = abs(x2 - x1)
-        dy = abs(y2 - y1)
-        sx = 1 if x1 < x2 else -1
-        sy = 1 if y1 < y2 else -1
-        err = dx - dy
-
-        curr_x, curr_y = x1, y1
-        while True:
-            self._mlx_pixel_put(curr_x, curr_y, color)
-            if curr_x == x2 and curr_y == y2:
-                break
-            e2 = 2 * err
-            if e2 > -dy:
-                err -= dy
-                curr_x += sx
-            if e2 < dx:
-                err += dx
-                curr_y += sy
+        if self.screen is not None:
+            pygame.draw.line(
+                self.screen,
+                (color.red, color.green, color.blue),
+                (x1, y1),
+                (x2, y2),
+                thickness
+            )
 
     def mlx_string_put(self, x: int, y: int,
                        color: IntegerRGB, text: str) -> None:
@@ -96,3 +85,27 @@ class PygameCanvas(Canvas):
                 text, True, (color.red, color.green, color.blue)
             )
             self.screen.blit(surface, (x, y))
+
+    def load_texture(self, path: str) -> Texture:
+        if path not in self._textures:
+            try:
+                surface = pygame.image.load(path)
+                if (pygame.display.get_init()
+                        and pygame.display.get_surface() is not None):
+                    surface = surface.convert_alpha()
+            except (FileNotFoundError, pygame.error) as err:
+                raise FileNotFoundError(
+                    f"Failed to load texture at '{path}': {err}"
+                ) from err
+            self._textures[path] = PygameTexture(surface)
+        return self._textures[path]
+
+    def mlx_put_image_to_window(self, texture: Texture,
+                                x: int, y: int) -> None:
+        if self.screen is None:
+            return
+        if not isinstance(texture, PygameTexture):
+            raise TypeError(
+                f"Expected PygameTexture, got {type(texture).__name__}"
+            )
+        self.screen.blit(texture.surface, (x, y))
