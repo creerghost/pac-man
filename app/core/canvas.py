@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from webcolors import IntegerRGB
 
+from .texture import Texture
 from .ui import UI
 
 
@@ -40,4 +41,13 @@ class Canvas(ABC):
     @abstractmethod
     def mlx_string_put(self, x: int, y: int,
                        color: IntegerRGB, text: str) -> None:
+        pass
+
+    @abstractmethod
+    def load_texture(self, path: str) -> Texture:
+        pass
+
+    @abstractmethod
+    def mlx_put_image_to_window(self, texture: Texture,
+                                x: int, y: int) -> None:
         pass
