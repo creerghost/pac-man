@@ -51,3 +51,10 @@ class Canvas(ABC):
     def mlx_put_image_to_window(self, texture: Texture,
                                 x: int, y: int) -> None:
         pass
+
+    @abstractmethod
+    def draw_sprite(self, texture: Texture, source: tuple[int, int, int, int],
+                    destination: tuple[int, int, int, int],
+                    angle: int = 0) -> None:
+        """Draw a scaled, optionally rotated region of a texture."""
+        pass

@@ -1,12 +1,13 @@
 """Draw the current gameplay state through the shared Canvas contract."""
 
 from math import ceil
-
-from webcolors import IntegerRGB
+from pathlib import Path
 
 from app.core.canvas import Canvas
 from app.core.ui import Color
+from app.core.texture_manager import TextureManager
 
+from .direction import Direction
 from .game_state import GameState
 from .ghosts import GhostState
 from .tile import Tile
@@ -14,6 +15,10 @@ from .tile import Tile
 
 class GameView:
     """Render the maze, characters, and HUD."""
+
+    def __init__(self) -> None:
+        self._canvas: Canvas | None = None
+        self._textures: TextureManager | None = None
 
     def render(self, canvas: Canvas, game: GameState) -> None:
         """Draw the maze, entities, and current HUD values."""
@@ -85,23 +90,42 @@ class GameView:
                 canvas.draw_rect(left + size - wall_thickness, top,
                                  wall_thickness, size, Color.BLUE)
 
-        def draw_entity(x: float, y: float, color: IntegerRGB) -> None:
-            canvas.draw_circle(int(offset_x + (x + 0.5) * size),
-                               int(offset_y + (y + 0.5) * size),
-                               min(max_radius, max(1, size * 2 // 5)), color)
+        if self._canvas is not canvas:
+            self._canvas = canvas
+            self._textures = TextureManager(canvas)
+        textures = self._textures
+        assert textures is not None
+        sprites = Path(__file__).resolve().parents[2] / "resources" / "sprites"
 
-        draw_entity(game.pacman.x, game.pacman.y, Color.YELLOW)
-        ghost_colors = (Color.RED, Color.PINK, Color.CYAN, Color.ORANGE)
+        def draw_entity(path: str, source: tuple[int, int, int, int],
+                        x: float, y: float, angle: int = 0) -> None:
+            texture = textures.get(str(sprites / path))
+            left = int(offset_x + x * size)
+            top = int(offset_y + y * size)
+            canvas.draw_sprite(texture, source, (left, top, size, size), angle)
+
+        progress = game.death_progress
+        if progress is not None:
+            frame = min(4, int(progress * 5))
+            draw_entity("pacman_death.png", (frame * 362, 170, 362, 362),
+                        game.pacman.x, game.pacman.y)
+        else:
+            frame = (0, 1, 2, 3)[int(game.animation_time * 8) % 4]
+            angle = {Direction.RIGHT: 0, Direction.NONE: 0, Direction.UP: 90,
+                     Direction.LEFT: 180, Direction.DOWN: 270}.get(
+                         game.pacman.facing_direction, 0)
+            draw_entity("pacman.png", (frame * 543, 90, 543, 543),
+                        game.pacman.x, game.pacman.y, angle)
+
         for index, ghost in enumerate(game.ghosts):
-            color = ghost_colors[index % len(ghost_colors)]
             if ghost.state == GhostState.FRIGHTENED:
-                remaining = ghost.frightened_time_left
-                color = (Color.WHITE if 0 < remaining <= 2.0
-                         and int(remaining * 4) % 2 == 0
-                         else Color.NEON_BLUE)
+                frame = 4
             elif ghost.state in (GhostState.EATEN, GhostState.RESPAWNING):
-                color = Color.WHITE
-            draw_entity(ghost.x, ghost.y, color)
+                frame = 5
+            else:
+                frame = index % 4
+            draw_entity("ghosts.png", (frame * 362, 170, 362, 362),
+                        ghost.x, ghost.y)
 
         canvas.set_font(size=ui.font_hint)
         seconds = max(0, ceil(game.remaining_time))
