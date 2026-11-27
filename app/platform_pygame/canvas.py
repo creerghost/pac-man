@@ -15,6 +15,7 @@ class PygameCanvas(Canvas):
         self._current_size: int = self.ui.font_text
         self._fonts: dict[tuple[Optional[str], int], pygame.font.Font] = {}
         self._textures: dict[str, PygameTexture] = {}
+        self._sprites: dict[tuple, pygame.Surface] = {}
 
     def set_font(self, font_path: Optional[str] = None,
                  size: int = 20) -> None:
@@ -109,3 +110,20 @@ class PygameCanvas(Canvas):
                 f"Expected PygameTexture, got {type(texture).__name__}"
             )
         self.screen.blit(texture.surface, (x, y))
+
+    def draw_sprite(self, texture: Texture, source: tuple[int, int, int, int],
+                    destination: tuple[int, int, int, int],
+                    angle: int = 0) -> None:
+        if self.screen is None:
+            return
+        if not isinstance(texture, PygameTexture):
+            raise TypeError(
+                f"Expected PygameTexture, got {type(texture).__name__}"
+            )
+        x, y, width, height = destination
+        key = (texture, source, width, height, angle)
+        if key not in self._sprites:
+            frame = texture.surface.subsurface(pygame.Rect(source))
+            frame = pygame.transform.scale(frame, (width, height))
+            self._sprites[key] = pygame.transform.rotate(frame, angle)
+        self.screen.blit(self._sprites[key], (x, y))

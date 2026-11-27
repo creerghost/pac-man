@@ -14,11 +14,18 @@ class Pacman(MovableEntity):
         """Initialize Pac-Man with position, speed, and empty buffer."""
         super().__init__(pos, speed)
         self._desired_direction = Direction.NONE
+        self._facing_direction = Direction.RIGHT
+
+    @property
+    def facing_direction(self) -> Direction:
+        """Return the last direction of movement, including while stopped."""
+        return self._facing_direction
 
     def reset_position(self, x: float, y: float) -> None:
         """Reset position and clear the desired direction buffer."""
         super().reset_position(x, y)
         self._desired_direction = Direction.NONE
+        self._facing_direction = Direction.RIGHT
 
     def set_desired_direction(self, direction: Direction) -> None:
         """Buffer player input direction for the next turn opportunity."""
@@ -87,4 +94,6 @@ class Pacman(MovableEntity):
         if dt <= 0:
             return
         self._handle_direction_change(maze)
+        if self._direction != Direction.NONE:
+            self._facing_direction = self._direction
         self._move(dt, maze)

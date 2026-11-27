@@ -71,6 +71,13 @@ class GameState:
         self.ghost_group: GhostGroup = self._create_ghosts()
 
     @property
+    def death_progress(self) -> float | None:
+        """Return animation progress during the death pause, if active."""
+        if not self._death_pending:
+            return None
+        return 1.0 - self._pause_left / self._death_pause
+
+    @property
     def ghosts(self) -> tuple[Ghost, ...]:
         """Return all ghosts in creation order."""
         return self.ghost_group.ghosts
